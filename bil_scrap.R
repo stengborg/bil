@@ -6,9 +6,12 @@ library(ggplot2)
 library(plotly)
 
 i <- 2485 # Antal sidor
-snapshot_dt <- as.Date("2018-07-22")
+snapshot_dt <- as.Date("2018-07-24")
 
 for(i in 2:i) {
+if(i == 2) {
+  start = Sys.time()
+}
   print(paste0("Iteration: ", i))
 url<- paste0('https://www.blocket.se/hela_sverige?q=&cg=1020&w=3&st=s&ps=&pe=&mys=&mye=&ms=&me=&cxpf=&cxpt=&fu=&gb=&ca=11&l=0&md=th&cp=&o=',i)
 webpage <- read_html(url)
@@ -30,6 +33,10 @@ if(i == 2) {
     tot <- df_alles
 } else {
     tot <- rbind(tot, df_alles)}
+
+if(i == max(i)) {
+  slut = Sys.time()
+  }
 }
 
 tot$snapshot_dt <- snapshot_dt
