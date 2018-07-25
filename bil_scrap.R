@@ -1,10 +1,9 @@
 library(rvest)
 library(tidyr)
 library(readr)
-library(dplyr)
-library(ggplot2)
+library(tidyverse)
 library(plotly)
-library(RKing)
+# library(RKing)
 options(scipen=999)
 
 i <- 2485 # Antal sidor
@@ -51,7 +50,10 @@ mutate(titel = as.character(titel)) %>%
 separate(titel, c("marke", "modell"), extra = 'drop', remove = FALSE) %>% 
 mutate(ar = sub(".+-", "", titel)) %>% 
 mutate(kost = parse_number(pris, locale = locale(grouping_mark = " "))) %>% 
-separate(typ, c("drivmedel", "lada", "stracka"), extra = 'drop', remove = FALSE) %>% 
+separate(col =  typ,into = c("drivmedel", "lada", "stracka"),sep = "[|]", remove = FALSE) %>% 
+separate(stracka, into = c("lag", "hog"), sep = "[-]", remove = FALSE) %>% 
+mutate(c_mil = gsub(x = lag,pattern = "[mil]",replacement = "")) %>% 
+mutate(trim_mil = trimws(c_mil, which = "both")) %>% 
 
 mutate(c_ar = nchar(gsub(" ", "", ar, fixed = TRUE))) %>% 
 filter(c_ar == 2) %>% 
@@ -66,6 +68,7 @@ mutate(c_marke = ifelse(c_marke %in% c("vw", "wv", "passat"), "volkswagen",
     ifelse(c_marke %in% c("v70","v50","v60","xc70","xc90"),"volvo",c_marke))) %>% 
     filter(ar %in% c("00","01","02","03","04","05","06","07","08","09","10",
                      "11","12","13","14","15","16","17","18","19")) %>% 
+mutate(c_stracka = parse_integer(gsub(pattern = " ",replacement = "",x = trim_mil))) %>% 
 #filter(drivmedel %in% c("Diesel", "Bensin", "MiljÃ¶brÃ¤nsle", "El")) %>% 
 #filter(lada %in% c("Manuell","Automat","Hybrid")) %>% 
 #filter(!stracka %in% c("Automat","Mer","Manuell")) %>% 
@@ -100,7 +103,7 @@ ggsave("pris_per_marke.png", width = 20, height = 20, units = "cm")
 
 
 # 2. Per modell
-# Börjar med volvo
+# B?rjar med volvo
 agg_modell <- c_tot %>% group_by(c_modell) %>% 
     filter(c_marke == "volvo") %>% 
     filter(ar %in% c("00","01","02","03","04","05","06","07","08","09","10",
@@ -112,7 +115,7 @@ df_agg_modell <-  agg_modell %>% group_by(c_modell) %>% summarise(n = n()) %>% a
 ggplot(agg_modell, aes(x=c_modell, y=kost, fill=c_modell)) + 
   geom_boxplot() +
   guides(fill=FALSE) +
-  labs(x = "", y = "Pris", title = "Pris för volvo modeller") +
+  labs(x = "", y = "Pris", title = "Pris f?r volvo modeller") +
   theme(plot.title = element_text(hjust = 0.5), 
     axis.line = element_blank())
 
@@ -120,7 +123,7 @@ ggsave("pris_per_modell_volvo.png", width = 20, height = 20, units = "cm")
 
 
 
-# 3. Per modell och år
+# 3. Per modell och ar
 agg_modell_ar <- c_tot %>% 
     filter(c_marke == "volvo") %>% 
     filter(ar %in% c("00","01","02","03","04","05","06","07","08","09","10",
@@ -136,9 +139,71 @@ agg_modell_ar <- c_tot %>%
 ggplot(agg_modell_ar, aes(x=position, y=avg_pris, group = 1)) + 
   geom_line() +
   geom_point() +
-  labs(x = "", y = "Genomsnittspris", title = "Pris för volvo XC60") +
+  labs(x = "", y = "Genomsnittspris", title = "Pris for volvo XC60") +
   theme(plot.title = element_text(hjust = 0.5), 
     axis.line = element_blank(),
     plot.background = element_blank())
 
 ggsave("pris_per_ar_xc60_volvo.png", width = 20, height = 20, units = "cm")
+
+# boxplot per ar
+c_tot %>% 
+filter(c_marke == "volvo") %>% 
+    filter(ar %in% c("00","01","02","03","04","05","06","07","08","09","10",
+                     "11","12","13","14","15","16","17","18","19"),
+           c_modell == "xc60") %>% 
+    mutate(ar = as.factor(ar)) %>% 
+    mutate(position = factor(ar, levels = rev(levels(ar)))) %>% 
+ggplot(aes(x=position, y=kost/1000, fill = position)) + 
+    geom_boxplot() +
+    guides(fill=FALSE) +
+    labs(x = "", y = "Pris [K SEK]", title = "Pris for volvo XC60") +
+    theme(plot.title = element_text(hjust = 0.5), 
+          axis.line = element_blank(),
+          plot.background = element_blank())
+
+ggsave("boxplot_pris_per_ar_xc60_volvo.png", width = 20, height = 20, units = "cm")
+
+
+
+
+
+
+# 4. Per modell och ar och mil
+
+
+ 
+agg_drivmedel <- c_tot %>% 
+    group_by(drivmedel) %>% 
+    summarise(n = n()) %>% 
+    arrange(desc(n))
+
+agg_modell_ar <- c_tot %>% 
+    filter(c_marke == "volvo") %>% 
+    filter(ar %in% c("00","01","02","03","04","05","06","07","08","09","10",
+                     "11","12","13","14","15","16","17","18","19"),
+           c_modell == "xc60") %>% 
+    mutate(ar = as.factor(ar)) %>% 
+    mutate(position = factor(ar, levels = rev(levels(ar)))) %>% 
+    mutate(seg_stracka = ifelse(c_stracka == 0, "0",
+                        ifelse(c_stracka <= 1500, "0-1500",
+                        ifelse(c_stracka <= 5000, "1500-5000",
+                        ifelse(c_stracka <= 10000, "5000-10000", "10000+"))))) %>% 
+    filter(!drivmedel %in% c("Diesel","Bensin","MiljÃ¶brÃ¤nsle/Hybrid","El")) %>% 
+    mutate(seg_stracka = as.factor(seg_stracka), drivmedel = as.factor(drivmedel)) %>% 
+  mutate(seg_stracka = factor(seg_stracka, levels = c("0","0-1500","1500-5000","5000-10000","10000+"))) %>%
+    group_by(position, seg_stracka, drivmedel) %>% 
+   summarise(avg_pris = mean(kost))
+
+
+ggplot(agg_modell_ar,aes(x = position, y = avg_pris, color = seg_stracka, group = seg_stracka)) + 
+    geom_line() +
+    geom_point() +
+    #geom_boxplot() +
+    labs(x = "", y = "Genomsnittspris", title = "Pris for volvo XC60") +
+    theme(plot.title = element_text(hjust = 0.5), 
+          axis.line = element_blank(),
+          plot.background = element_blank()) +
+    facet_wrap(~drivmedel)
+
+ggsave("pris_per_ar_mil_xc60_volvo_linegraph_drivmedel.png", width = 20, height = 20, units = "cm")
