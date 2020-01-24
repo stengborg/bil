@@ -14,7 +14,7 @@ if(i == 2) {
   start = Sys.time()
 }
 print(paste0("Iteration: ", i))
-url<- paste0('https://www.blocket.se/hela_sverige?q=&cg=1020&w=3&st=s&ps=&pe=&mys=&mye=&ms=&me=&cxpf=&cxpt=&fu=&gb=&ca=11&l=0&md=th&cp=&o=',i)
+url<- paste0('https://www.blocket.se/annonser/hela_sverige/fordon/bilar?cg=1020&page=',i,'&st=s')
 webpage <- read_html(url)
 titel_html <- html_nodes(webpage, '.item_link')
 pris_html <- html_nodes(webpage,'#ps_0 , #item_list .font-large')
@@ -69,7 +69,7 @@ mutate(c_marke = ifelse(c_marke %in% c("vw", "wv", "passat"), "volkswagen",
     filter(ar %in% c("00","01","02","03","04","05","06","07","08","09","10",
                      "11","12","13","14","15","16","17","18","19")) %>% 
 mutate(c_stracka = parse_integer(gsub(pattern = " ",replacement = "",x = trim_mil))) %>% 
-#filter(drivmedel %in% c("Diesel", "Bensin", "Miljöbränsle", "El")) %>% 
+#filter(drivmedel %in% c("Diesel", "Bensin", "MiljÃ¶brÃ¤nsle", "El")) %>% 
 #filter(lada %in% c("Manuell","Automat","Hybrid")) %>% 
 #filter(!stracka %in% c("Automat","Mer","Manuell")) %>% 
 mutate(ar = as.factor(ar), c_marke = as.factor(c_marke))
@@ -85,11 +85,11 @@ modell
 tmp <-  c_tot %>% group_by(c_modell) %>% summarise(n = n()) %>% arrange(desc(n))
     
 # TODO
-# 1. Per märke
+# 1. Per mÃ¤rke
 # 2. Per modell
-# 3. Per modell och år
+# 3. Per modell och Ã¥r
 
-# 1. Per märke
+# 1. Per mÃ¤rke
 agg <- c_tot %>% group_by(c_marke) %>% 
     filter(c_marke %in% c("volvo", "bmw", "volkswagen", "mercedes", "audi", "ford", "peugeot")) %>% 
     filter(kost <= 1500000)
@@ -212,7 +212,7 @@ agg_modell_ar <- c_tot %>%
                         ifelse(c_stracka <= 1500, "0-1500",
                         ifelse(c_stracka <= 5000, "1500-5000",
                         ifelse(c_stracka <= 10000, "5000-10000", "10000+"))))) %>% 
-    filter(!drivmedel %in% c("Diesel","Bensin","Milj�br�nsle/Hybrid","El")) %>% 
+    filter(!drivmedel %in% c("Diesel","Bensin","Miljöbränsle/Hybrid","El")) %>% 
     mutate(seg_stracka = as.factor(seg_stracka), drivmedel = as.factor(drivmedel)) %>% 
   mutate(seg_stracka = factor(seg_stracka, levels = c("0","0-1500","1500-5000","5000-10000","10000+"))) %>%
     group_by(position, seg_stracka, drivmedel) %>% 
