@@ -3,25 +3,43 @@ library(tidyr)
 library(readr)
 library(tidyverse)
 library(plotly)
+library(lubridate)
 # library(RKing)
 options(scipen=999)
 
-i <- 2485 # Antal sidor
-snapshot_dt <- as.Date("2018-07-24")
+i <- 3 # Antal sidor
+# i <- 2927 # Antal sidor
+
+snapshot_time <- now()
+snapshot_dt <- as.Date(snapshot_time)
 
 for(i in 2:i) {
 if(i == 2) {
   start = Sys.time()
 }
 print(paste0("Iteration: ", i))
-url<- paste0('https://www.blocket.se/annonser/hela_sverige/fordon/bilar?cg=1020&page=',i,'&st=s')
+url<- paste0('https://www.blocket.se/annonser/hela_sverige/fordon/bilar?cg=1020&page=',i)
 webpage <- read_html(url)
-titel_html <- html_nodes(webpage, '.item_link')
+annons_html <- webpage %>% 
+  html_nodes('article') 
+annons_html
+
+t1 <- annons_html %>% 
+  html_nodes('span') %>% 
+  html_text()
+t1
+titel_html
+
+ad_name = latest_ad.find("span", class_ = "jzzuDW").text
+ad_price = latest_ad.find("div", class_ = "bNwNaE").text
+ad_url = latest_ad.find("a", class_="enigRj")["href"]
+
 pris_html <- html_nodes(webpage,'#ps_0 , #item_list .font-large')
 typ_html <- html_nodes(webpage, '.motor-li-thumb-extra-info')
 
 # Converting the title data to text
 titel <- html_text(titel_html)
+titel
 pris <- html_text(pris_html)
 pris <- pris[-1]
 typ <- html_text(typ_html)
